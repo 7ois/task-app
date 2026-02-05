@@ -18,10 +18,17 @@ const filterList: { id: number, listType: 'all' | 'todo' | 'doing' | 'done' }[] 
 
 export default function Home() {
 
-  const [taskList, setTaskList] = useState<Task[]>([])
+  const [taskList, setTaskList] = useState<Task[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('tasks')
+      return stored ? JSON.parse(stored) : tasks
+    }
+    return tasks
+  })
   const [filter, setFilter] = useState<'all' | 'todo' | 'doing' | 'done'>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
 
   useEffect(() => {
     fetch("/api/tasks")
@@ -34,39 +41,86 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  const toggleStatus = (id: number) => {
-    const newTaskList = taskList.map(item => {
-      let newStatus = item.status
-      if (item.id === id) {
-        if (item.status === 'todo') {
-          newStatus = 'doing'
-        } else if (item.status === 'doing') {
-          newStatus = 'done'
-        } else {
-          newStatus = 'todo'
-        }
-        return { ...item, status: newStatus }
-      }
-      return item
+  useEffect(() => {
+    localStorage.setItem('tasks', JSON.stringify(taskList))
+  }, [taskList])
+
+  // const toggleStatus = (id: number) => {
+  //   const newTaskList = taskList.map(item => {
+  //     let newStatus = item.status
+  //     if (item.id === id) {
+  //       if (item.status === 'todo') {
+  //         newStatus = 'doing'
+  //       } else if (item.status === 'doing') {
+  //         newStatus = 'done'
+  //       } else {
+  //         newStatus = 'todo'
+  //       }
+  //       return { ...item, status: newStatus }
+  //     }
+  //     return item
+  //   })
+
+  //   setTaskList(newTaskList)
+  // }
+
+  const toggleStatus = async (id: number) => {
+    const res = await fetch("api/tasks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id })
     })
 
-    setTaskList(newTaskList)
-  }
+    const updateTask = await res.json()
 
-  // const filteredTasks = taskList.filter(item => {
-  //   if (filter === 'all') return true
-  //   return item.status === filter
-  // })
+    setTaskList(prev => (
+      prev.map(task => task.id === id ? updateTask : task)
+    ))
+  }
 
   const filteredTasks = useMemo(() => {
     if (filter === 'all') return taskList
     return taskList.filter(task => task.status === filter)
   }, [taskList, filter])
 
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim()) return
+
+    const res = await fetch('/api/tasks', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTaskTitle })
+    })
+    // const newTask: Task = {
+    //   id: Date.now(),
+    //   title: newTaskTitle,
+    //   status: 'todo'
+    // }
+    const newTask = await res.json()
+    setTaskList(prev => [...prev, newTask])
+    setNewTaskTitle('')
+  }
+
+  const deleteTask = (id: number) => {
+    setTaskList(prev => prev.filter(task => task.id !== id))
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main>
         <h1>My Task App</h1>
+        <div className="my-2 flex gap-5">
+          <input
+            type="text"
+            placeholder="เพิ่มงานใหม่..."
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            className="border pl-2" />
+          <button
+            className="border p-2 cursor-pointer"
+            onClick={handleAddTask}
+          >ADD</button>
+        </div>
         <div className="flex gap-10">
           {filterList.map(item => (
             <button
@@ -84,7 +138,7 @@ export default function Home() {
           <ul>
             {filteredTasks.map(item => (
               <li key={item.id}>
-                <TaskItem task={item} onToggleStatus={toggleStatus} />
+                <TaskItem task={item} onToggleStatus={toggleStatus} onDelete={deleteTask} />
               </li>
             ))}
           </ul>

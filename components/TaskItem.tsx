@@ -7,9 +7,10 @@ type Task = {
 type TaskItemProps = {
     task: Task;
     onToggleStatus: (id: number) => void;
+    onDelete: (id: number) => void;
 }
 
-export default function TaskItem({ task, onToggleStatus }: TaskItemProps) {
+export default function TaskItem({ task, onToggleStatus, onDelete }: TaskItemProps) {
     return (
         <>
             <div className="flex items-center justify-center gap-3 mb-2">
@@ -20,6 +21,9 @@ export default function TaskItem({ task, onToggleStatus }: TaskItemProps) {
                 >
                     Toggle
                 </button>
+                <button
+                    className="border p-2"
+                    onClick={() => onDelete(task.id)}>Delete</button>
             </div>
         </>
     )
