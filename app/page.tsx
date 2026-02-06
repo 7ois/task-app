@@ -18,13 +18,7 @@ const filterList: { id: number, listType: 'all' | 'todo' | 'doing' | 'done' }[] 
 
 export default function Home() {
 
-  const [taskList, setTaskList] = useState<Task[]>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('tasks')
-      return stored ? JSON.parse(stored) : tasks
-    }
-    return tasks
-  })
+  const [taskList, setTaskList] = useState<Task[]>([])
   const [filter, setFilter] = useState<'all' | 'todo' | 'doing' | 'done'>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -41,9 +35,9 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(taskList))
-  }, [taskList])
+  // useEffect(() => {
+  //   localStorage.setItem('tasks', JSON.stringify(taskList))
+  // }, [taskList])
 
   // const toggleStatus = (id: number) => {
   //   const newTaskList = taskList.map(item => {
@@ -65,10 +59,16 @@ export default function Home() {
   // }
 
   const toggleStatus = async (id: number) => {
+
+    const currentTask = taskList.find(task => task.id === id)
+    if (!currentTask) return
+
+    const nextStatus = currentTask.status === "todo" ? "doing" : currentTask.status === "doing" ? "done" : "todo"
+
     const res = await fetch("api/tasks", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id })
+      body: JSON.stringify({ id, status: nextStatus })
     })
 
     const updateTask = await res.json()
@@ -101,7 +101,14 @@ export default function Home() {
     setNewTaskTitle('')
   }
 
-  const deleteTask = (id: number) => {
+  const deleteTask = async (id: number) => {
+    // setTaskList(prev => prev.filter(task => task.id !== id))
+    await fetch("api/tasks", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id })
+    })
+
     setTaskList(prev => prev.filter(task => task.id !== id))
   }
 
