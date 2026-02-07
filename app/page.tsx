@@ -1,6 +1,5 @@
 "use client"
 import TaskItem from "@/components/TaskItem";
-import { tasks } from "@/lib/tasks";
 import { useEffect, useMemo, useState } from "react";
 
 type Task = {
@@ -23,6 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [isAdding, setIsAdding] = useState(false)
 
   useEffect(() => {
     fetch("/api/tasks")
@@ -31,51 +31,36 @@ export default function Home() {
         return res.json()
       })
       .then(data => setTaskList(data))
-      .catch(err => setError(err.message))
+      .catch(() => setError("โหลด task ไม่สำเร็จ"))
       .finally(() => setLoading(false))
   }, [])
 
-  // useEffect(() => {
-  //   localStorage.setItem('tasks', JSON.stringify(taskList))
-  // }, [taskList])
-
-  // const toggleStatus = (id: number) => {
-  //   const newTaskList = taskList.map(item => {
-  //     let newStatus = item.status
-  //     if (item.id === id) {
-  //       if (item.status === 'todo') {
-  //         newStatus = 'doing'
-  //       } else if (item.status === 'doing') {
-  //         newStatus = 'done'
-  //       } else {
-  //         newStatus = 'todo'
-  //       }
-  //       return { ...item, status: newStatus }
-  //     }
-  //     return item
-  //   })
-
-  //   setTaskList(newTaskList)
-  // }
-
   const toggleStatus = async (id: number) => {
+
+    const prevTasks = taskList
 
     const currentTask = taskList.find(task => task.id === id)
     if (!currentTask) return
 
     const nextStatus = currentTask.status === "todo" ? "doing" : currentTask.status === "doing" ? "done" : "todo"
+    setTaskList(prev => prev.map(task => (
+      task.id === id ? { ...task, status: nextStatus } : task
+    )))
 
-    const res = await fetch("api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: nextStatus })
-    })
+    try {
+      const res = await fetch("api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: nextStatus })
+      })
 
-    const updateTask = await res.json()
-
-    setTaskList(prev => (
-      prev.map(task => task.id === id ? updateTask : task)
-    ))
+      if (!res.ok) throw new Error("Update failed!")
+      const updateTask = await res.json()
+      setTaskList(prev => prev.map(task => task.id === id ? updateTask : task))
+    } catch (err) {
+      alert("อัปเดตสถานะไม่สำเร็จ")
+      setTaskList(prevTasks)
+    }
   }
 
   const filteredTasks = useMemo(() => {
@@ -84,25 +69,29 @@ export default function Home() {
   }, [taskList, filter])
 
   const handleAddTask = async () => {
-    if (!newTaskTitle.trim()) return
+    if (!newTaskTitle.trim() || isAdding) return
 
-    const res = await fetch('/api/tasks', {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTaskTitle })
-    })
-    // const newTask: Task = {
-    //   id: Date.now(),
-    //   title: newTaskTitle,
-    //   status: 'todo'
-    // }
-    const newTask = await res.json()
-    setTaskList(prev => [...prev, newTask])
-    setNewTaskTitle('')
+    setIsAdding(true)
+
+    try {
+      const res = await fetch('/api/tasks', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTaskTitle })
+      })
+      const newTask = await res.json()
+      setTaskList(prev => [...prev, newTask])
+      setNewTaskTitle('')
+    } catch {
+      alert("Add task failed")
+    } finally {
+      setIsAdding(false)
+    }
   }
 
   const deleteTask = async (id: number) => {
-    // setTaskList(prev => prev.filter(task => task.id !== id))
+    const ok = confirm("ลบ task นี้แน่ใจไหม?")
+    if (!ok) return
     await fetch("api/tasks", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -124,9 +113,10 @@ export default function Home() {
             onChange={(e) => setNewTaskTitle(e.target.value)}
             className="border pl-2" />
           <button
+            disabled={isAdding}
             className="border p-2 cursor-pointer"
             onClick={handleAddTask}
-          >ADD</button>
+          >{isAdding ? "Adding..." : "ADD"}</button>
         </div>
         <div className="flex gap-10">
           {filterList.map(item => (
@@ -143,11 +133,12 @@ export default function Home() {
           <p>Loading...</p>
         ) : (
           <ul>
-            {filteredTasks.map(item => (
-              <li key={item.id}>
-                <TaskItem task={item} onToggleStatus={toggleStatus} onDelete={deleteTask} />
-              </li>
-            ))}
+            {!error && filteredTasks.length === 0 ? (<p className="text-gray-400">ยังไม่มี task</p>)
+              : filteredTasks.map(item => (
+                <li key={item.id}>
+                  <TaskItem task={item} onToggleStatus={toggleStatus} onDelete={deleteTask} />
+                </li>
+              ))}
           </ul>
         )}
         {error && <p className="text-red-500">{error}</p>}
