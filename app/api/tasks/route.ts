@@ -26,9 +26,24 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { id } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
-    await pool.query("DELETE FROM tasks WHERE id = $1", [id]);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Task id is required" },
+        { status: 400 },
+      );
+    }
+
+    const result = await pool.query("DELETE FROM tasks WHERE id = $1", [
+      Number(id),
+    ]);
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });

@@ -92,13 +92,21 @@ export default function Home() {
   const deleteTask = async (id: number) => {
     const ok = confirm("ลบ task นี้แน่ใจไหม?")
     if (!ok) return
-    await fetch("api/tasks", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id })
-    })
 
+    const prevTasks = taskList
     setTaskList(prev => prev.filter(task => task.id !== id))
+
+    try {
+      const res = await fetch(`api/tasks?id=${id}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) throw new Error("Delete failed!")
+    } catch {
+      alert("ลบไม่สำเร็จ!")
+      setTaskList(prevTasks)
+    }
+
   }
 
   return (
@@ -111,6 +119,11 @@ export default function Home() {
             placeholder="เพิ่มงานใหม่..."
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAddTask()
+              }
+            }}
             className="border pl-2" />
           <button
             disabled={isAdding}
