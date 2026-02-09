@@ -68,21 +68,35 @@ export default function Home() {
     return taskList.filter(task => task.status === filter)
   }, [taskList, filter])
 
+  const tempId = Date.now()
+  const optimistictask: Task = {
+    id: tempId,
+    title: newTaskTitle,
+    status: "todo"
+  }
+
   const handleAddTask = async () => {
+
     if (!newTaskTitle.trim() || isAdding) return
 
     setIsAdding(true)
+    setTaskList(prev => [...prev, optimistictask])
+    setNewTaskTitle("")
 
     try {
-      const res = await fetch('/api/tasks', {
+      const res = await fetch('/api/taskss', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTaskTitle })
+        body: JSON.stringify({ title: optimistictask.title })
+
       })
-      const newTask = await res.json()
-      setTaskList(prev => [...prev, newTask])
+
+      if (!res.ok) throw new Error("Add failed")
+      const savedTask = await res.json()
+      setTaskList(prev => prev.map(task => task.id === tempId ? savedTask : task))
       setNewTaskTitle('')
     } catch {
+      setTaskList(prev => prev.filter(task => task.id !== tempId))
       alert("Add task failed")
     } finally {
       setIsAdding(false)
