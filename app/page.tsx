@@ -1,19 +1,14 @@
 "use client"
-import TaskItem from "@/components/TaskItem";
 import { useEffect, useMemo, useState } from "react";
+import TaskSearch from "../components/TaskSearch";
+import TaskFilter from "../components/TaskFilter";
+import TaskList from "../components/TaskList";
 
 type Task = {
   id: number
   title: string;
   status: string;
 }
-
-const filterList: { id: number, listType: 'all' | 'todo' | 'doing' | 'done' }[] = [
-  { id: 1, listType: 'all' },
-  { id: 2, listType: 'todo' },
-  { id: 3, listType: 'doing' },
-  { id: 4, listType: 'done' },
-]
 
 export default function Home() {
 
@@ -84,7 +79,7 @@ export default function Home() {
     setNewTaskTitle("")
 
     try {
-      const res = await fetch('/api/taskss', {
+      const res = await fetch('/api/tasks', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: optimistictask.title })
@@ -127,48 +122,9 @@ export default function Home() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main>
         <h1>My Task App</h1>
-        <div className="my-2 flex gap-5">
-          <input
-            type="text"
-            placeholder="เพิ่มงานใหม่..."
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAddTask()
-              }
-            }}
-            className="border pl-2" />
-          <button
-            disabled={isAdding}
-            className="border p-2 cursor-pointer"
-            onClick={handleAddTask}
-          >{isAdding ? "Adding..." : "ADD"}</button>
-        </div>
-        <div className="flex gap-10">
-          {filterList.map(item => (
-            <button
-              key={item.id}
-              className={`cursor-pointer ${filter === item.listType ? "border-b" : ""}`}
-              onClick={() => setFilter(item.listType)}
-            >
-              {item.listType}
-            </button>
-          ))}
-        </div>
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <ul>
-            {!error && filteredTasks.length === 0 ? (<p className="text-gray-400">ยังไม่มี task</p>)
-              : filteredTasks.map(item => (
-                <li key={item.id}>
-                  <TaskItem task={item} onToggleStatus={toggleStatus} onDelete={deleteTask} />
-                </li>
-              ))}
-          </ul>
-        )}
-        {error && <p className="text-red-500">{error}</p>}
+        <TaskSearch value={newTaskTitle} onChange={setNewTaskTitle} onSubmit={handleAddTask} loading={isAdding} />
+        <TaskFilter value={filter} onChange={setFilter} />
+        <TaskList loading={loading} error={error} tasks={filteredTasks} toggleStatus={toggleStatus} onDelete={deleteTask} />
       </main>
     </div>
   );
