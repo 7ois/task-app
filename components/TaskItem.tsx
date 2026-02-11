@@ -12,19 +12,21 @@ type TaskItemProps = {
 
 export default function TaskItem({ task, onToggleStatus, onDelete }: TaskItemProps) {
     return (
-        <>
-            <div className="flex items-center justify-center gap-3 mb-2">
-                <p>{task.title}  :  {task.status}</p>
+        <div className="flex items-center justify-between gap-3 mb-2 p-2 shadow-md">
+            <p>{task.title}</p>
+            <div className="flex gap-2">
                 <button
-                    className="border p-2"
+                    className="border border-[#6155F5] bg-[#6155F5] rounded-md p-2 cursor-pointer"
                     onClick={() => onToggleStatus(task.id)}
                 >
                     Toggle
                 </button>
                 <button
-                    className="border p-2"
-                    onClick={() => onDelete(task.id)}>Delete</button>
+                    className="border border-[#f55555] bg-[#f55555] rounded-md p-2 cursor-pointer"
+                    onClick={() => onDelete(task.id)}>
+                    Delete
+                </button>
             </div>
-        </>
+        </div>
     )
 }

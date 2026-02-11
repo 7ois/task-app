@@ -7,7 +7,8 @@ type props = {
 
 export default function TaskSearch({ value, onChange, onSubmit, loading }: props) {
     return (
-        <div className="my-2 flex gap-5">
+        <div className="flex items-center gap-5 p-5">
+            <h1 className="text-[#6155F5]">New task : </h1>
             <input
                 type="text"
                 placeholder="เพิ่มงานใหม่..."
@@ -18,10 +19,10 @@ export default function TaskSearch({ value, onChange, onSubmit, loading }: props
                         onSubmit()
                     }
                 }}
-                className="border pl-2" />
+                className="col-span-2 pl-2 w-1/4 outline-none" />
             <button
                 disabled={loading}
-                className="border p-2 cursor-pointer"
+                className="border border-[#6155F5] bg-[#6155F5] rounded-md cursor-pointer w-28 h-10"
                 onClick={onSubmit}
             >{loading ? "Adding..." : "ADD"}</button>
         </div>

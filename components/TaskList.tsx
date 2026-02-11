@@ -16,12 +16,12 @@ type props = {
 
 export default function TaskList({ loading, error, tasks, toggleStatus, onDelete }: props) {
     return (
-        <div>
+        <div className="overflow-y-auto no-scrollbar">
             {loading ? (
                 <p>Loading...</p>
             ) : (
                 <ul>
-                    {!error && tasks.length === 0 ? (<p className="text-gray-400">ยังไม่มี task</p>)
+                    {!error && tasks.length === 0 ? (<p className="text-gray-400 text-center">ยังไม่มี task</p>)
                         : tasks.map(item => (
                             <li key={item.id}>
                                 <TaskItem task={item} onToggleStatus={toggleStatus} onDelete={onDelete} />
@@ -29,7 +29,7 @@ export default function TaskList({ loading, error, tasks, toggleStatus, onDelete
                         ))}
                 </ul>
             )}
-            {error && <p className="text-red-500">{error}</p>}
+            {error && <p className="text-red-500 text-center">{error}</p>}
         </div>
     )
 }
